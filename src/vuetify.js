@@ -1,5 +1,5 @@
 import { createVuetify } from 'vuetify';
-import { mdi } from 'vuetify/iconsets/mdi-svg';
+import { aliases as defaultAliases, mdi } from 'vuetify/iconsets/mdi-svg';
 import 'vuetify/styles';
 import {
     mdiChevronDown,
@@ -69,6 +69,7 @@ import {
     mdiFormatTextWrappingWrap,
     mdiUpload,
     mdiFolderPlus,
+    mdiFilePlus,
     mdiMusic,
     mdiPlay,
     mdiPause,
@@ -87,6 +88,7 @@ export default createVuetify({
     icons: {
         defaultSet: 'mdi',
         aliases: {
+            ...defaultAliases,
             mdiChevronDown,
             mdiChevronLeft,
             mdiChevronRight,
@@ -154,6 +156,7 @@ export default createVuetify({
             mdiFormatTextWrappingWrap,
             mdiUpload,
             mdiFolderPlus,
+            mdiFilePlus,
             mdiMusic,
             mdiPlay,
             mdiPause,

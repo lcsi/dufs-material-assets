@@ -3,6 +3,7 @@ import { marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import prism from 'prismjs';
 
+// 语言类
 import 'prismjs/themes/prism.css';
 import 'prismjs/components/prism-c.js';
 import 'prismjs/components/prism-cpp.js';
@@ -30,7 +31,12 @@ import 'prismjs/components/prism-batch.js';
 import 'prismjs/components/prism-shell-session.js';
 import 'prismjs/components/prism-bash.js';
 import 'prismjs/components/prism-markup-templating.js';
+import 'prismjs/components/prism-markdown.js';
+
+// 配置类
+import 'prismjs/components/prism-ini.js';
 import 'prismjs/components/prism-yaml.js';
+import 'prismjs/components/prism-toml.js';
 import 'prismjs/plugins/line-numbers/prism-line-numbers.js';
 import 'prismjs/plugins/line-numbers/prism-line-numbers.css';
 
@@ -43,6 +49,8 @@ import dialog from './plugins/dialog.js';
 import snackbar from './plugins/snackbar.js';
 
 import './markdown-style.css';
+
+import 'vue-prism-editor/dist/prismeditor.min.css';
 
 marked.use(markedHighlight({
     highlight(code, lang) {

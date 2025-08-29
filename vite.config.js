@@ -98,7 +98,15 @@ export default defineConfig({
     },
     server: {
         proxy: {
-            '^/prefix/.+\..+?$': 'http://localhost:5000',
+            // 开发环境url后面加/prefix/访问
+            '^/prefix/.+\..+?$': {
+                target: 'https://dufs.xxx.com',
+                changeOrigin: true,
+                rewrite: (path) => {
+                    let r =  path.replace('/prefix/', '/')
+                    return r
+                }
+            }
         },
     },
 });

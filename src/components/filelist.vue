@@ -108,6 +108,19 @@
             </template>
         </v-tooltip>
         <v-tooltip
+            v-if="filelist.allow_upload"
+            :text="t('titleCreateFile')"
+        >
+            <template v-slot:activator="{ props }">
+                <v-btn
+                    v-bind="props"
+                    variant="text"
+                    icon="$mdiFilePlus"
+                    @click="createFile"
+                ></v-btn>
+            </template>
+        </v-tooltip>
+        <v-tooltip
             v-if="filelist.allow_archive"
             :text="t('titleDownloadArchive')"
         >
@@ -394,11 +407,12 @@
                                     filelist.allow_upload
                                     && filelist.allow_delete
                                     && p.size < 1048576
-                                    && (
-                                        previewableTextFilenames.has(p.filename.toLowerCase())
-                                        || previewableTextExts.has(p.ext)
-                                        || codeLanguageTable[p.ext]
-                                    )
+                                    && !p.is_dir
+                                    // && (
+                                    //     previewableTextFilenames.has(p.filename.toLowerCase())
+                                    //     || previewableTextExts.has(p.ext)
+                                    //     || codeLanguageTable[p.ext]
+                                    // )
                                 "
                                 :text="t('actionEditFile')"
                             >
@@ -521,7 +535,7 @@
 
     <v-dialog
         v-model="previewDialog"
-        width="min(960px, calc(100vw - 32px))"
+        width="min(1200px, calc(100vw - 32px))"
     >
         <v-card>
             <v-card-title class="d-flex align-center">
@@ -805,7 +819,7 @@
 
     <v-dialog
         v-model="editDialog"
-        width="min(960px, calc(100vw - 32px))"
+        width="min(1200px, calc(100vw - 32px))"
     >
         <v-card>
             <v-card-title class="d-flex align-center">
@@ -844,11 +858,26 @@
                 style="max-height:calc(100vh - 48px - 52px - 16px)"
             >
                 <v-card-text>
-                    <textarea
-                        v-model="editContent"
-                        :wrap="editWrap ? 'soft' : 'off'"
-                        style="font-family:ui-monospace,'Cascadia Mono','JetBrains Mono','Segoe UI Mono','Liberation Mono',Menlo,Monaco,Consolas,sans-serif;width:100%;height:calc(100vh - 48px - 52px - 16px - 34px);resize:none;border:none;outline:none;font-size:1rem"
-                    ></textarea>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <v-checkbox
+                            color="red"
+                            v-model="showLineNnumbers"
+                            label="显示行号"
+                        ></v-checkbox>
+                        <v-select
+                            label="高亮语法"
+                            density="compact"
+                            style="width: 10rem;" 
+                            v-model="currentLanguage" :items="filterOptionsLanguage" 
+                            @update:model-value="handleLanguageSelectionChange">
+                        </v-select>
+                    </div>
+                    <prism-editor 
+                        class="editor" 
+                        v-model="editContent" 
+                        :highlight="highlighter" 
+                        :line-numbers="showLineNnumbers">
+                    </prism-editor>
                 </v-card-text>
             </v-skeleton-loader>
         </v-card>
@@ -900,6 +929,7 @@ import {
     readmeFilenames,
 } from '../common.js';
 
+import { PrismEditor } from 'vue-prism-editor';
 const { $dialog, $toast } = getCurrentInstance().appContext.config.globalProperties;
 const { t } = useI18n();
 
@@ -921,6 +951,28 @@ const dufsfetch = (input, init = {}) => fetch(input, init)
         $toast.error(e.toString());
         throw e;
     });
+
+const highlighter = (code) => {
+    let lang = currentLanguage.value
+    if (prism.languages[lang]) {
+        // How to use line-number plugin with webpack · Issue #1487 · PrismJS/prism
+        // https://github.com/PrismJS/prism/issues/1487
+        setTimeout(prism.highlightAll);
+        return prism.highlight(code, prism.languages[lang], lang);
+    } else {
+        return code;
+    }
+}
+
+const filterOptionsLanguage = computed(() => {
+   return Object.keys(prism.languages).sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }))
+});
+
+const currentLanguage = ref('')
+const handleLanguageSelectionChange = (lang) => {
+
+}
+const showLineNnumbers = ref(false)
 
 /**
  * @typedef {{
@@ -1111,6 +1163,13 @@ const updateEditContent = async () => {
     const r = await dufsfetch(editItem.value.fullpath).then(r => r.text());
     editSkeleton.value = false;
     clearTimeout(st);
+
+    if (filterOptionsLanguage.value.indexOf(editItem.value.ext) === -1) {
+        currentLanguage.value = 'text';
+    } else {
+        currentLanguage.value = editItem.value.ext;
+    }
+    
     editContent.value = r;
 };
 
@@ -1290,6 +1349,14 @@ const createFolder = async () => {
     await updateFilelist();
 };
 
+const createFile = async () => {
+    const path = await $dialog.promises.prompt(t('dialogCreateFileLabel'), t('titleCreateFile'));
+    if (!path) return;
+    await dufsfetch(currentPath.value + encodeURIComponent(path), { method: 'PUT' });
+    $toast.success(t('toastCreateFile'));
+    await updateFilelist();
+};
+
 const previewAudioPaused = ref(true);
 const previewAudioShuffle = ref(false);
 /** @type {import('vue').Ref<'once' | 'on' | 'off'>} */
@@ -1390,3 +1457,24 @@ watch(previewItem, () => {
 });
 
 </script>
+
+<style> 
+  .editor {
+    /* background: #ededed; */
+    /* color: #fff; */
+    min-height: 50vh;
+    font-family: Fira code, Fira Mono, Consolas, Menlo, Courier, monospace;
+    font-size: 1rem;
+    line-height: 1.5;
+    padding: 5px;
+  }
+
+  .prism-editor__textarea:focus {
+    outline: none;
+  }
+
+  .prism-editor__line-numbers {
+    border-right: solid 1px #708090;
+    padding-right: .5rem;
+  }
+</style>
